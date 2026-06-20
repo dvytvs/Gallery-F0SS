@@ -51,7 +51,6 @@ fun MenuBottomSheet(onDismiss: () -> Unit, onMenuItemClick: (String) -> Unit) {
                 MenuItem(title = "Личный альбом", icon = Icons.Outlined.Lock, onClick = { onMenuItemClick("Личный альбом") })
                 MenuItem(title = "Корзина", icon = Icons.Outlined.Delete, onClick = { onMenuItemClick("Корзина") })
                 MenuItem(title = "Настройки", icon = Icons.Outlined.Settings, onClick = { onMenuItemClick("Настройки") })
-                // Empty spacer for the 4th column to maintain alignment
                 Spacer(modifier = Modifier.weight(1f))
             }
         }

@@ -95,7 +95,7 @@ fun DetailScreen(
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             Toast.makeText(context, "Файл удален", Toast.LENGTH_SHORT).show()
-            onNavigateBack() // Go back after deletion
+            onNavigateBack()
         }
     }
 

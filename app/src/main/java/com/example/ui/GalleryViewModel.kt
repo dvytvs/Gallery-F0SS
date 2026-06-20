@@ -36,12 +36,10 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
                 val mediaItems = repository.getMediaItems()
                 val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
                 
-                // Group by date (ignoring time)
                 val groupedByDate = mediaItems.groupBy { item ->
                     dateFormat.format(Date(item.dateAdded))
                 }
 
-                // Group by album name
                 val groupedByAlbum = mediaItems.groupBy { item ->
                     item.albumName ?: "Camera"
                 }

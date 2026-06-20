@@ -205,7 +205,6 @@ fun GalleryScreen(viewModel: GalleryViewModel, updateTrigger: Int, onMediaClick:
                 }
             }
             
-            // Bottom floating navigation bar
             if (filterMode == null) {
                 Box(
                     modifier = Modifier

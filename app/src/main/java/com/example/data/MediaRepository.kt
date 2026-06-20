@@ -70,7 +70,7 @@ class MediaRepository(private val context: Context) {
                         id = id,
                         uri = contentUri,
                         name = name,
-                        dateAdded = dateAdded * 1000L, // Convert to ms
+                        dateAdded = dateAdded * 1000L,
                         isVideo = type == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO,
                         albumName = bucketName
                     )
