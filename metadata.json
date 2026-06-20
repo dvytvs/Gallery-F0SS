@@ -1,0 +1,6 @@
+{
+  "name": "Gallery",
+  "description": "An open-source, telemetry-free gallery application styled like One UI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
