@@ -31,6 +31,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import com.example.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -110,13 +113,13 @@ fun PermissionRequestScreen(permissionState: MultiplePermissionsState) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                "Access Your Media",
+                stringResource(R.string.permission_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "The Gallery requires permission to access photos and videos to display them.",
+                stringResource(R.string.permission_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
@@ -125,17 +128,17 @@ fun PermissionRequestScreen(permissionState: MultiplePermissionsState) {
                 onClick = { permissionState.launchMultiplePermissionRequest() },
                 modifier = Modifier.fillMaxWidth().height(56.dp)
             ) {
-                Text("Allow Access")
+                Text(stringResource(R.string.permission_allow))
             }
         }
     }
 }
 
-enum class GalleryTab(val title: String, val icon: ImageVector) {
-    Pictures("Снимки", Icons.Default.Image),
-    Albums("Альбомы", Icons.Default.PhotoAlbum),
-    Collections("Коллекции", Icons.Default.Star),
-    Menu("Меню", Icons.Default.Menu)
+enum class GalleryTab(val titleResId: Int, val icon: ImageVector) {
+    Pictures(R.string.tab_pictures, Icons.Default.Image),
+    Albums(R.string.tab_albums, Icons.Default.PhotoAlbum),
+    Collections(R.string.tab_collections, Icons.Default.Star),
+    Menu(R.string.tab_menu, Icons.Default.Menu)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -147,12 +150,20 @@ fun GalleryScreen(viewModel: GalleryViewModel, updateTrigger: Int, onMediaClick:
     var filterMode by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
 
+    androidx.activity.compose.BackHandler(enabled = filterMode != null || showMenuBottomSheet) {
+        if (showMenuBottomSheet) {
+            showMenuBottomSheet = false
+        } else if (filterMode != null) {
+            filterMode = null
+        }
+    }
+
     Scaffold(
         topBar = {
             LargeTopAppBar(
                 title = { 
                     Text(
-                        filterMode ?: selectedTab.title, 
+                        filterMode ?: stringResource(selectedTab.titleResId), 
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(start = 16.dp)
                     ) 
@@ -195,8 +206,11 @@ fun GalleryScreen(viewModel: GalleryViewModel, updateTrigger: Int, onMediaClick:
                     ) { tab ->
                         when (tab) {
                             GalleryTab.Pictures -> PicturesGrid(state.mediaByDate, state.allMediaCount, filterMode, updateTrigger, onMediaClick)
-                            GalleryTab.Albums -> AlbumsGrid(state.albums)
-                            GalleryTab.Collections -> EmptyState("No collections available")
+                            GalleryTab.Albums -> AlbumsGrid(state.albums) { albumName ->
+                                filterMode = albumName
+                                selectedTab = GalleryTab.Pictures
+                            }
+                            GalleryTab.Collections -> EmptyState(stringResource(R.string.empty_collections))
                             GalleryTab.Menu -> {
                                 PicturesGrid(state.mediaByDate, state.allMediaCount, filterMode, updateTrigger, onMediaClick)
                             }
@@ -212,7 +226,7 @@ fun GalleryScreen(viewModel: GalleryViewModel, updateTrigger: Int, onMediaClick:
                         .padding(bottom = 16.dp)
                         .wrapContentWidth()
                         .clip(RoundedCornerShape(32.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f))
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
@@ -236,8 +250,9 @@ fun GalleryScreen(viewModel: GalleryViewModel, updateTrigger: Int, onMediaClick:
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(tab.icon, contentDescription = tab.title, modifier = Modifier.size(20.dp))
-                                    Text(tab.title, fontSize = 9.sp, maxLines = 1)
+                                    val tabTitle = stringResource(tab.titleResId)
+                                    Icon(tab.icon, contentDescription = tabTitle, modifier = Modifier.size(20.dp))
+                                    Text(tabTitle, fontSize = 9.sp, maxLines = 1)
                                 }
                             }
                         }
@@ -248,21 +263,29 @@ fun GalleryScreen(viewModel: GalleryViewModel, updateTrigger: Int, onMediaClick:
             if (showMenuBottomSheet) {
                 MenuBottomSheet(
                     onDismiss = { showMenuBottomSheet = false },
-                    onMenuItemClick = { title ->
+                    onMenuItemClick = { titleResId ->
                         showMenuBottomSheet = false
-                        when (title) {
-                            "Видео", "Избранное", "Корзина" -> filterMode = title
-                            "Последние" -> {
+                        when (titleResId) {
+                            R.string.title_video, R.string.title_favorites -> {
+                                // We need string representation for filterMode to match what PicturesGrid expects
+                                filterMode = if (titleResId == R.string.title_video) "Видео" else "Избранное"
+                                selectedTab = GalleryTab.Pictures
+                            }
+                            R.string.title_trash -> {
+                                filterMode = "Корзина"
+                                selectedTab = GalleryTab.Pictures
+                            }
+                            R.string.title_recent -> {
                                 filterMode = null
                                 selectedTab = GalleryTab.Pictures
                             }
-                            "Настройки" -> {
+                            R.string.title_settings -> {
                                 val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                                     data = android.net.Uri.fromParts("package", context.packageName, null)
                                 }
                                 context.startActivity(intent)
                             }
-                            else -> android.widget.Toast.makeText(context, "В разработке: $title", android.widget.Toast.LENGTH_SHORT).show()
+                            else -> android.widget.Toast.makeText(context, "В разработке", android.widget.Toast.LENGTH_SHORT).show()
                         }
                     }
                 )
@@ -282,7 +305,7 @@ fun EmptyState(message: String) {
 @Composable
 fun PicturesGrid(mediaByDate: Map<String, List<MediaItem>>, totalCount: Int, filterMode: String?, updateTrigger: Int, onMediaClick: (Long) -> Unit) {
     if (totalCount == 0) {
-        EmptyState("No pictures or videos")
+        EmptyState(stringResource(R.string.empty_pictures))
         return
     }
 
@@ -297,14 +320,15 @@ fun PicturesGrid(mediaByDate: Map<String, List<MediaItem>>, totalCount: Int, fil
                     "Корзина" -> isTrashed
                     "Видео" -> !isTrashed && item.isVideo
                     "Избранное" -> !isTrashed && sharedPrefs.getBoolean("fav_${item.id}", false)
-                    else -> !isTrashed
+                    null -> !isTrashed
+                    else -> !isTrashed && item.albumName == filterMode
                 }
             }
         }.filterValues { it.isNotEmpty() }
     }
 
     if (filteredMediaByDate.isEmpty()) {
-        EmptyState("Ничего не найдено")
+        EmptyState(stringResource(R.string.empty_search))
         return
     }
 
@@ -333,61 +357,77 @@ fun PicturesGrid(mediaByDate: Map<String, List<MediaItem>>, totalCount: Int, fil
 }
 
 @Composable
-fun AlbumsGrid(albums: Map<String, List<MediaItem>>) {
+fun AlbumsGrid(albums: Map<String, List<MediaItem>>, onAlbumClick: (String) -> Unit) {
     if (albums.isEmpty()) {
-        EmptyState("No albums found")
+        EmptyState(stringResource(R.string.empty_albums))
         return
     }
 
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        items(albums.keys.toList()) { albumName ->
-            val albumItems = albums[albumName] ?: emptyList()
-            val thumbnail = albumItems.firstOrNull()
-            
-            Column(
-                modifier = Modifier.fillMaxWidth().testTag("album_card_$albumName"),
-                horizontalAlignment = Alignment.Start
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable { /* TBD: Open Album */ }
+    val targetAlbums = listOf("Camera", "Screenshots", "Downloads", "Recent", "Favorites")
+    val filteredAlbums = albums.filterKeys { it in targetAlbums }
+    val displayAlbums = if (filteredAlbums.isNotEmpty()) filteredAlbums else albums
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Albums", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.view_all), color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable { /* TBD expand */ })
+        }
+        
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(displayAlbums.keys.toList()) { albumName ->
+                val albumItems = displayAlbums[albumName] ?: emptyList()
+                val thumbnail = albumItems.firstOrNull()
+                
+                Column(
+                    modifier = Modifier.fillMaxWidth().testTag("album_card_$albumName"),
+                    horizontalAlignment = Alignment.Start
                 ) {
-                    if (thumbnail != null) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(thumbnail.uri)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = "Thumbnail for $albumName",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .clickable { onAlbumClick(albumName) }
+                    ) {
+                        if (thumbnail != null) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(thumbnail.uri)
+                                    .size(coil.size.Size(300, 300))
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Thumbnail for $albumName",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = albumName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                    Text(
+                        text = "${albumItems.size}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = albumName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
-                Text(
-                    text = "${albumItems.size}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
             }
         }
     }
@@ -404,6 +444,7 @@ fun MediaItemCell(item: MediaItem, onClick: () -> Unit) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(item.uri)
+                .size(coil.size.Size(300, 300))
                 .crossfade(true)
                 .build(),
             contentDescription = item.name,

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="empty_pictures">Нет фото и видео</string>
+    <string name="empty_albums">Нет альбомов</string>
+    <string name="empty_collections">Нет коллекций</string>
+    <string name="empty_search">Ничего не найдено</string>
+    <string name="tab_pictures">Снимки</string>
+    <string name="tab_albums">Альбомы</string>
+    <string name="tab_collections">Коллекции</string>
+    <string name="tab_menu">Меню</string>
+    <string name="title_video">Видео</string>
+    <string name="title_favorites">Избранное</string>
+    <string name="title_trash">Корзина</string>
+    <string name="title_recent">Последние</string>
+    <string name="title_settings">Настройки</string>
+    <string name="alert_dev">В разработке:</string>
+    <string name="permission_title">Доступ к медиа</string>
+    <string name="permission_desc">Галерее нужен доступ к фото и видео для их отображения.</string>
+    <string name="permission_allow">Разрешить</string>
+    <string name="view_all">Посмотреть все</string>
+</resources>

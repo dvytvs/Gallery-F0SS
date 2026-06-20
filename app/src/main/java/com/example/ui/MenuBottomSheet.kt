@@ -16,10 +16,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MenuBottomSheet(onDismiss: () -> Unit, onMenuItemClick: (String) -> Unit) {
+fun MenuBottomSheet(onDismiss: () -> Unit, onMenuItemClick: (Int) -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -39,26 +41,25 @@ fun MenuBottomSheet(onDismiss: () -> Unit, onMenuItemClick: (String) -> Unit) {
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                MenuItem(title = "Видео", icon = Icons.Outlined.Videocam, onClick = { onMenuItemClick("Видео") })
-                MenuItem(title = "Избранное", icon = Icons.Outlined.FavoriteBorder, onClick = { onMenuItemClick("Избранное") })
-                MenuItem(title = "Последние", icon = Icons.Outlined.Schedule, onClick = { onMenuItemClick("Последние") })
-                MenuItem(title = "Тип съемки", icon = Icons.Outlined.CameraAlt, onClick = { onMenuItemClick("Тип съемки") })
+                MenuItem(titleResId = R.string.title_video, icon = Icons.Outlined.Videocam, onClick = { onMenuItemClick(R.string.title_video) })
+                MenuItem(titleResId = R.string.title_favorites, icon = Icons.Outlined.FavoriteBorder, onClick = { onMenuItemClick(R.string.title_favorites) })
+                MenuItem(titleResId = R.string.title_recent, icon = Icons.Outlined.Schedule, onClick = { onMenuItemClick(R.string.title_recent) })
+                MenuItem(titleResId = R.string.title_settings, icon = Icons.Outlined.CameraAlt, onClick = { onMenuItemClick(R.string.title_settings) })
             }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                MenuItem(title = "Личный альбом", icon = Icons.Outlined.Lock, onClick = { onMenuItemClick("Личный альбом") })
-                MenuItem(title = "Корзина", icon = Icons.Outlined.Delete, onClick = { onMenuItemClick("Корзина") })
-                MenuItem(title = "Настройки", icon = Icons.Outlined.Settings, onClick = { onMenuItemClick("Настройки") })
-                Spacer(modifier = Modifier.weight(1f))
+                MenuItem(titleResId = R.string.title_trash, icon = Icons.Outlined.Delete, onClick = { onMenuItemClick(R.string.title_trash) })
+                MenuItem(titleResId = R.string.title_settings, icon = Icons.Outlined.Settings, onClick = { onMenuItemClick(R.string.title_settings) })
+                Spacer(modifier = Modifier.weight(2f)) // Give spacer the rest
             }
         }
     }
 }
 
 @Composable
-fun RowScope.MenuItem(title: String, icon: ImageVector, onClick: () -> Unit) {
+fun RowScope.MenuItem(titleResId: Int, icon: ImageVector, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .weight(1f)
@@ -66,6 +67,7 @@ fun RowScope.MenuItem(title: String, icon: ImageVector, onClick: () -> Unit) {
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        val title = stringResource(titleResId)
         Icon(
             imageVector = icon,
             contentDescription = title,

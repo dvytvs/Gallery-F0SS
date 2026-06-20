@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.PlayCircleOutline
 import androidx.compose.material.icons.filled.RestoreFromTrash
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -43,7 +44,12 @@ fun DetailScreen(
     mediaItem: MediaItem?,
     onNavigateBack: () -> Unit
 ) {
-    if (mediaItem == null) return
+    if (mediaItem == null) {
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
 
     val context = LocalContext.current
     val sharedPrefs = context.getSharedPreferences("GalleryPrefs", android.content.Context.MODE_PRIVATE)
@@ -223,6 +229,23 @@ fun DetailScreen(
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize()
             )
+            
+            if (mediaItem.isVideo) {
+                IconButton(
+                    onClick = {
+                        val playIntent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(mediaItem.uri, "video/*")
+                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        }
+                        context.startActivity(Intent.createChooser(playIntent, "Play Video"))
+                    },
+                    modifier = Modifier
+                        .size(64.dp)
+                        .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(32.dp))
+                ) {
+                    Icon(Icons.Default.PlayCircleOutline, contentDescription = "Play", tint = Color.White, modifier = Modifier.size(48.dp))
+                }
+            }
             
             if (showInfoDialog) {
                 AlertDialog(
