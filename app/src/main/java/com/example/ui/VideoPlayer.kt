@@ -277,7 +277,14 @@ fun CustomVideoPlayer(
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     IconButton(onClick = {
-                        if (isPlaying) exoPlayer.pause() else exoPlayer.play()
+                        if (exoPlayer.playbackState == Player.STATE_ENDED) {
+                            exoPlayer.seekTo(0)
+                            exoPlayer.play()
+                        } else if (isPlaying) {
+                            exoPlayer.pause()
+                        } else {
+                            exoPlayer.play()
+                        }
                     }) {
                         Icon(
                             if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
