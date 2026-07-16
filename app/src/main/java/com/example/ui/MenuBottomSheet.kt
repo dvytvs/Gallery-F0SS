@@ -27,16 +27,23 @@ fun MenuBottomSheet(onDismiss: () -> Unit, onMenuItemClick: (Int) -> Unit) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        dragHandle = { BottomSheetDefaults.DragHandle() },
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        dragHandle = null
     ) {
-        Column(
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
+            shape = RoundedCornerShape(32.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -54,6 +61,7 @@ fun MenuBottomSheet(onDismiss: () -> Unit, onMenuItemClick: (Int) -> Unit) {
                 MenuItem(titleResId = R.string.title_settings, icon = Icons.Outlined.Settings, onClick = { onMenuItemClick(R.string.title_settings) })
                 Spacer(modifier = Modifier.weight(2f)) // Give spacer the rest
             }
+        }
         }
     }
 }

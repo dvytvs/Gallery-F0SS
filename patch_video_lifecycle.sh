@@ -1,0 +1,1 @@
+sed -i '45a import androidx.lifecycle.Lifecycle\nimport androidx.lifecycle.LifecycleEventObserver\nimport androidx.compose.ui.platform.LocalLifecycleOwner' app/src/main/java/com/example/ui/VideoPlayer.kt

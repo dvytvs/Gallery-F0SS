@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -42,6 +43,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import coil.request.videoFrameMillis
 import com.example.data.MediaItem
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
@@ -145,10 +147,20 @@ enum class GalleryTab(val titleResId: Int, val icon: ImageVector) {
 @Composable
 fun GalleryScreen(viewModel: GalleryViewModel, updateTrigger: Int, onMediaClick: (Long) -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedTab by remember { mutableStateOf(GalleryTab.Pictures) }
+    val context = LocalContext.current
+    val sharedPrefs = remember { context.getSharedPreferences("GalleryPrefs", android.content.Context.MODE_PRIVATE) }
+    
+    var selectedTab by remember {
+        val saved = sharedPrefs.getString("selectedTab", GalleryTab.Pictures.name)
+        mutableStateOf(GalleryTab.valueOf(saved ?: GalleryTab.Pictures.name))
+    }
+    
+    LaunchedEffect(selectedTab) {
+        sharedPrefs.edit().putString("selectedTab", selectedTab.name).apply()
+    }
+
     var showMenuBottomSheet by remember { mutableStateOf(false) }
     var filterMode by remember { mutableStateOf<String?>(null) }
-    val context = LocalContext.current
 
     androidx.activity.compose.BackHandler(enabled = filterMode != null || showMenuBottomSheet) {
         if (showMenuBottomSheet) {
@@ -162,8 +174,18 @@ fun GalleryScreen(viewModel: GalleryViewModel, updateTrigger: Int, onMediaClick:
         topBar = {
             LargeTopAppBar(
                 title = { 
+                    val filterTitle = when (filterMode) {
+                        "Trash" -> stringResource(R.string.filter_trash)
+                        "Video" -> stringResource(R.string.filter_video)
+                        "Favorites" -> stringResource(R.string.filter_favorites)
+                        "Recent" -> stringResource(R.string.filter_recent)
+                        "Camera" -> stringResource(R.string.filter_camera)
+                        "Screenshots" -> stringResource(R.string.filter_screenshot)
+                        "Downloads" -> stringResource(R.string.filter_downloads)
+                        else -> filterMode
+                    }
                     Text(
-                        filterMode ?: stringResource(selectedTab.titleResId), 
+                        filterTitle ?: stringResource(selectedTab.titleResId), 
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(start = 16.dp)
                     ) 
@@ -206,7 +228,7 @@ fun GalleryScreen(viewModel: GalleryViewModel, updateTrigger: Int, onMediaClick:
                     ) { tab ->
                         when (tab) {
                             GalleryTab.Pictures -> PicturesGrid(state.mediaByDate, state.allMediaCount, filterMode, updateTrigger, onMediaClick)
-                            GalleryTab.Albums -> AlbumsGrid(state.albums) { albumName ->
+                            GalleryTab.Albums -> AlbumsGrid(state.albums, state.mediaByDate, updateTrigger) { albumName ->
                                 filterMode = albumName
                                 selectedTab = GalleryTab.Pictures
                             }
@@ -268,11 +290,11 @@ fun GalleryScreen(viewModel: GalleryViewModel, updateTrigger: Int, onMediaClick:
                         when (titleResId) {
                             R.string.title_video, R.string.title_favorites -> {
                                 // We need string representation for filterMode to match what PicturesGrid expects
-                                filterMode = if (titleResId == R.string.title_video) "Видео" else "Избранное"
+                                filterMode = if (titleResId == R.string.title_video) "Video" else "Favorites"
                                 selectedTab = GalleryTab.Pictures
                             }
                             R.string.title_trash -> {
-                                filterMode = "Корзина"
+                                filterMode = "Trash"
                                 selectedTab = GalleryTab.Pictures
                             }
                             R.string.title_recent -> {
@@ -285,7 +307,7 @@ fun GalleryScreen(viewModel: GalleryViewModel, updateTrigger: Int, onMediaClick:
                                 }
                                 context.startActivity(intent)
                             }
-                            else -> android.widget.Toast.makeText(context, "В разработке", android.widget.Toast.LENGTH_SHORT).show()
+                            else -> android.widget.Toast.makeText(context, context.getString(R.string.in_development), android.widget.Toast.LENGTH_SHORT).show()
                         }
                     }
                 )
@@ -315,13 +337,16 @@ fun PicturesGrid(mediaByDate: Map<String, List<MediaItem>>, totalCount: Int, fil
     val filteredMediaByDate = remember(mediaByDate, filterMode, updateTrigger) {
         mediaByDate.mapValues { (_, items) ->
             items.filter { item ->
-                val isTrashed = sharedPrefs.getBoolean("trash_${item.id}", false)
                 when (filterMode) {
-                    "Корзина" -> isTrashed
-                    "Видео" -> !isTrashed && item.isVideo
-                    "Избранное" -> !isTrashed && sharedPrefs.getBoolean("fav_${item.id}", false)
-                    null -> !isTrashed
-                    else -> !isTrashed && item.albumName == filterMode
+                    "Trash" -> item.isTrashed
+                    "Video" -> !item.isTrashed && item.isVideo
+                    "Favorites" -> !item.isTrashed && sharedPrefs.getBoolean("fav_${item.id}", false)
+                    "Recent" -> !item.isTrashed
+                    "Camera" -> !item.isTrashed && (item.albumName == "Camera" || item.dataPath.contains("DCIM/Camera", ignoreCase = true))
+                    "Screenshots" -> !item.isTrashed && (item.albumName == "Screenshots" || item.dataPath.contains("Screenshots", ignoreCase = true))
+                    "Downloads" -> !item.isTrashed && (item.albumName == "Download" || item.albumName == "Downloads" || item.dataPath.contains("Download", ignoreCase = true))
+                    null -> !item.isTrashed
+                    else -> !item.isTrashed && item.albumName == filterMode
                 }
             }
         }.filterValues { it.isNotEmpty() }
@@ -357,15 +382,75 @@ fun PicturesGrid(mediaByDate: Map<String, List<MediaItem>>, totalCount: Int, fil
 }
 
 @Composable
-fun AlbumsGrid(albums: Map<String, List<MediaItem>>, onAlbumClick: (String) -> Unit) {
-    if (albums.isEmpty()) {
+fun AlbumsGrid(
+    albums: Map<String, List<MediaItem>>,
+    mediaByDate: Map<String, List<MediaItem>>,
+    updateTrigger: Int,
+    onAlbumClick: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val sharedPrefs = remember { context.getSharedPreferences("GalleryPrefs", android.content.Context.MODE_PRIVATE) }
+    
+    var showAllAlbums by remember { mutableStateOf(false) }
+
+    val allMedia = remember(mediaByDate, updateTrigger) {
+        mediaByDate.values.flatten().filter { !it.isTrashed }
+    }
+    
+    val favorites = remember(allMedia, updateTrigger) {
+        allMedia.filter { sharedPrefs.getBoolean("fav_${it.id}", false) }
+    }
+    
+    val customAlbums = remember(albums, allMedia, favorites) {
+        val map = mutableMapOf<String, List<MediaItem>>()
+        map["Recent"] = allMedia
+        if (favorites.isNotEmpty()) {
+            map["Favorites"] = favorites
+        }
+        val targetOrder = listOf("Camera", "Screenshots", "Downloads", "Download")
+
+        val cameraItems = allMedia.filter { it.albumName == "Camera" || it.dataPath.contains("DCIM/Camera", ignoreCase = true) }
+        if (cameraItems.isNotEmpty()) map["Camera"] = cameraItems
+
+        val screenshotsItems = allMedia.filter { it.albumName == "Screenshots" || it.dataPath.contains("Screenshots", ignoreCase = true) }
+        if (screenshotsItems.isNotEmpty()) map["Screenshots"] = screenshotsItems
+
+        val downloadsItems = allMedia.filter { it.albumName == "Download" || it.albumName == "Downloads" || it.dataPath.contains("Download", ignoreCase = true) }
+        if (downloadsItems.isNotEmpty()) map["Downloads"] = downloadsItems
+        
+        albums.keys.filter { it !in targetOrder }.forEach { key ->
+            val items = albums[key]?.filter { !it.isTrashed }
+            if (!items.isNullOrEmpty()) {
+                map[key] = items
+            }
+        }
+        map
+    }
+
+    val hasMoreAlbums = remember(customAlbums) {
+        val layout = listOf("Recent", "Favorites", "Camera", "Screenshots", "Downloads")
+        customAlbums.keys.any { it !in layout }
+    }
+
+    val displayKeys = remember(customAlbums, showAllAlbums) {
+        if (showAllAlbums) {
+            customAlbums.keys.toList()
+        } else {
+            val list = mutableListOf<String>()
+            val layout = listOf("Recent", "Favorites", "Camera", "Screenshots", "Downloads")
+            layout.forEach { name ->
+                if (customAlbums.containsKey(name)) {
+                    list.add(name)
+                }
+            }
+            list
+        }
+    }
+
+    if (customAlbums.isEmpty()) {
         EmptyState(stringResource(R.string.empty_albums))
         return
     }
-
-    val targetAlbums = listOf("Camera", "Screenshots", "Downloads", "Recent", "Favorites")
-    val filteredAlbums = albums.filterKeys { it in targetAlbums }
-    val displayAlbums = if (filteredAlbums.isNotEmpty()) filteredAlbums else albums
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -373,19 +458,26 @@ fun AlbumsGrid(albums: Map<String, List<MediaItem>>, onAlbumClick: (String) -> U
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Albums", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text(stringResource(R.string.view_all), color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable { /* TBD expand */ })
+            Text(stringResource(R.string.main_albums), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            if (hasMoreAlbums) {
+                Text(
+                    text = if (showAllAlbums) stringResource(R.string.hide) else stringResource(R.string.view_all), 
+                    color = MaterialTheme.colorScheme.primary, 
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.clickable { showAllAlbums = !showAllAlbums }
+                )
+            }
         }
         
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(displayAlbums.keys.toList()) { albumName ->
-                val albumItems = displayAlbums[albumName] ?: emptyList()
+            items(displayKeys) { albumName ->
+                val albumItems = customAlbums[albumName] ?: emptyList()
                 val thumbnail = albumItems.firstOrNull()
                 
                 Column(
@@ -401,16 +493,20 @@ fun AlbumsGrid(albums: Map<String, List<MediaItem>>, onAlbumClick: (String) -> U
                             .clickable { onAlbumClick(albumName) }
                     ) {
                         if (thumbnail != null) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(thumbnail.uri)
-                                    .size(coil.size.Size(300, 300))
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = "Thumbnail for $albumName",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
+                            if (thumbnail.isVideo) {
+                                VideoThumbnail(uri = thumbnail.uri, modifier = Modifier.fillMaxSize())
+                            } else {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(thumbnail.uri)
+                                        .size(coil.size.Size(256, 256))
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = "Thumbnail for $albumName",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -434,6 +530,38 @@ fun AlbumsGrid(albums: Map<String, List<MediaItem>>, onAlbumClick: (String) -> U
 }
 
 @Composable
+fun VideoThumbnail(uri: android.net.Uri, modifier: Modifier = Modifier) {
+    var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    val context = LocalContext.current
+    LaunchedEffect(uri) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    bitmap = context.contentResolver.loadThumbnail(uri, android.util.Size(256, 256), null)
+                } else {
+                    val retriever = android.media.MediaMetadataRetriever()
+                    retriever.setDataSource(context, uri)
+                    bitmap = retriever.getFrameAtTime(0)
+                    retriever.release()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+    if (bitmap != null) {
+        androidx.compose.foundation.Image(
+            bitmap = bitmap!!.asImageBitmap(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+        )
+    } else {
+        Box(modifier = modifier.background(Color.DarkGray))
+    }
+}
+
+@Composable
 fun MediaItemCell(item: MediaItem, onClick: () -> Unit) {
     Box(
         modifier = Modifier
@@ -441,16 +569,20 @@ fun MediaItemCell(item: MediaItem, onClick: () -> Unit) {
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable { onClick() }
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(item.uri)
-                .size(coil.size.Size(300, 300))
-                .crossfade(true)
-                .build(),
-            contentDescription = item.name,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+        if (item.isVideo) {
+            VideoThumbnail(uri = item.uri, modifier = Modifier.fillMaxSize())
+        } else {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(item.uri)
+                    .size(coil.size.Size(256, 256))
+                    .crossfade(true)
+                    .build(),
+                contentDescription = item.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
         if (item.isVideo) {
             Icon(
                 imageVector = Icons.Default.PlayCircleOutline,

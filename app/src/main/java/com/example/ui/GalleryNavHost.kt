@@ -31,10 +31,10 @@ fun GalleryNavHost(
             route = "detail/{mediaId}",
             arguments = listOf(navArgument("mediaId") { type = NavType.LongType })
         ) { backStackEntry ->
-            val mediaId = backStackEntry.arguments?.getLong("mediaId")
-            val mediaItem = mediaId?.let { viewModel.getMediaItemById(it) }
+            val mediaId = backStackEntry.arguments?.getLong("mediaId") ?: return@composable
             DetailScreen(
-                mediaItem = mediaItem,
+                initialMediaId = mediaId,
+                viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

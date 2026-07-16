@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="empty_pictures">Нет фото и видео</string>
-    <string name="empty_albums">Нет альбомов</string>
+    <string name="app_name">Галерея</string>
+    <string name="empty_pictures">Нет фото или видео</string>
+    <string name="empty_albums">Альбомы не найдены</string>
     <string name="empty_collections">Нет коллекций</string>
     <string name="empty_search">Ничего не найдено</string>
-    <string name="tab_pictures">Снимки</string>
+    <string name="tab_pictures">Картинки</string>
     <string name="tab_albums">Альбомы</string>
     <string name="tab_collections">Коллекции</string>
     <string name="tab_menu">Меню</string>
@@ -14,8 +14,37 @@
     <string name="title_recent">Последние</string>
     <string name="title_settings">Настройки</string>
     <string name="alert_dev">В разработке:</string>
-    <string name="permission_title">Доступ к медиа</string>
-    <string name="permission_desc">Галерее нужен доступ к фото и видео для их отображения.</string>
-    <string name="permission_allow">Разрешить</string>
-    <string name="view_all">Посмотреть все</string>
+    <string name="permission_title">Доступ к медиафайлам</string>
+    <string name="permission_desc">Галерее требуется разрешение на доступ к фото и видео для их отображения.</string>
+    <string name="permission_allow">Разрешить доступ</string>
+    <string name="view_all">Просмотреть все</string>
+    <string name="toast_image_saved">Изображение сохранено</string>
+    <string name="toast_save_error">Ошибка сохранения</string>
+    <string name="toast_file_deleted">Файл удален</string>
+    <string name="toast_rotate_screen">Поворот экрана</string>
+    <string name="open_in_video_player">Открыть в видеоплеере</string>
+    <string name="in_development">В разработке</string>
+    <string name="set_as_wallpaper">Установить как обои</string>
+    <string name="no_suitable_app">Нет подходящего приложения</string>
+    <string name="video_edit_unavailable">Редактирование видео недоступно</string>
+    <string name="share">Поделиться</string>
+    <string name="error_move_trash">Ошибка перемещения в корзину</string>
+    <string name="cannot_delete_file">Невозможно удалить файл</string>
+    <string name="details">Сведения</string>
+    <string name="name">Имя:</string>
+    <string name="album">Альбом:</string>
+    <string name="date">Дата:</string>
+    <string name="unknown">Неизвестно</string>
+    <string name="ok">ОК</string>
+    <string name="frame_saved">Кадр сохранен</string>
+    <string name="error_saving_frame">Ошибка сохранения кадра</string>
+    <string name="filter_trash">Корзина</string>
+    <string name="filter_video">Видео</string>
+    <string name="filter_favorites">Избранное</string>
+    <string name="filter_recent">Последние</string>
+    <string name="filter_camera">Камера</string>
+    <string name="filter_screenshot">Скриншот</string>
+    <string name="filter_downloads">Загрузки</string>
+    <string name="main_albums">Основные альбомы</string>
+    <string name="hide">Скрыть</string>
 </resources>

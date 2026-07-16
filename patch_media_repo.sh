@@ -1,3 +1,4 @@
+cat << 'INNER_EOF' > app/src/main/java/com/example/data/MediaRepository.kt
 package com.example.data
 
 import android.content.ContentUris
@@ -47,7 +48,7 @@ class MediaRepository(private val context: Context) {
                 putString(android.content.ContentResolver.QUERY_ARG_SQL_SELECTION, selection)
                 putStringArray(android.content.ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, selectionArgs)
                 putString(android.content.ContentResolver.QUERY_ARG_SQL_SORT_ORDER, sortOrder)
-                putInt(MediaStore.QUERY_ARG_MATCH_TRASHED, 1)
+                putInt(MediaStore.QUERY_ARG_MATCH_TRASHED, MediaStore.MATCH_TRASHED)
             }
             context.contentResolver.query(
                 MediaStore.Files.getContentUri("external"),
@@ -113,3 +114,4 @@ class MediaRepository(private val context: Context) {
         mediaItems
     }
 }
+INNER_EOF

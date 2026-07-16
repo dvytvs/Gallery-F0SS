@@ -1,0 +1,1 @@
+sed -i '38a\import androidx.compose.foundation.gestures.awaitEachGesture\nimport androidx.compose.foundation.gestures.awaitFirstDown\nimport androidx.compose.foundation.gestures.calculateZoom\nimport androidx.compose.foundation.gestures.calculatePan\n' app/src/main/java/com/example/ui/DetailScreen.kt

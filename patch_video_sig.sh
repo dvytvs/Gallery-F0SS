@@ -1,0 +1,1 @@
+sed -i '38c\@Composable\nfun CustomVideoPlayer(uri: Uri, onSingleTap: () -> Unit = {}, showOverlay: Boolean = true) {\n    val context = LocalContext.current\n\n    val exoPlayer = remember {' app/src/main/java/com/example/ui/VideoPlayer.kt
