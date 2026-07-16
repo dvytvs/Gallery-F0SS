@@ -59,6 +59,10 @@ android {
   testOptions { unitTests { isIncludeAndroidResources = true } }
 }
 
+configurations.all {
+  exclude(group = "io.opencensus")
+}
+
 dependencies {
   implementation(platform(libs.androidx.compose.bom))
   implementation(libs.accompanist.permissions)
